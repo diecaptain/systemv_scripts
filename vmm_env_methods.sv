@@ -1,0 +1,16 @@
+virtual protected task power_on_reset();
+virtual task hw_reset();
+virtual task power_up();
+task pre_test();
+virtual function void gen_cfg();
+virtual function void build();
+virtual task reset_dut();
+virtual task cfg_dut();
+virtual task start();
+virtual task wait_for_end();
+virtual task stop();
+virtual task cleanup();
+virtual task restart(bit reconfig = 0);
+virtual task restart_test();
+virtual task report();
+task run();
