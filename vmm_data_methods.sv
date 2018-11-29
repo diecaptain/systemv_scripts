@@ -1,3 +1,4 @@
+//data methods
 function new(vmm_log log);
 function vmm_log set_log(vmm_log log);
 function void display(string prefix = "");
