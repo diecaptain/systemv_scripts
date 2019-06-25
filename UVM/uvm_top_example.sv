@@ -1,3 +1,6 @@
+`include uvm_macros.svh
+`include uvm_package_example.sv
+
 module uvm_top_example;
 
   import uvm_pkg::*;              // Import UVM Package Factory Base
