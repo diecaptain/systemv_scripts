@@ -7,7 +7,7 @@ module uvm_top_example;
   dut_if dut_if_name ();
   
   // Instantiate DUT
-  dut    dut_name ( .dif(dut_if_name) );
+  dut    dut_name ( .dut_inst_if_name(dut_if_name) );
 
   // Events
   initial
