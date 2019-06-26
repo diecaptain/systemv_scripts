@@ -1,5 +1,5 @@
 interface dut_if
     // declare ports here
-    // logic port
-    // logic [n:0] port
+    logic clock, reset;
+    logic[7:0] portA, portB;
 endinterface
