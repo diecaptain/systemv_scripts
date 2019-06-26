@@ -23,7 +23,7 @@ module uvm_top_example;
   initial
     begin
       // Calling UVM Config Database
-      uvm_config_db #(virtual dut_if)::set(...);
+      uvm_config_db #(virtual dut_if)::set(null, "*", "dut_if", dut_if_name);
       // Declaring $finish
       uvm_top.finish_on_completion = 1;
       // use UVM Run Test factory base to run custom test
