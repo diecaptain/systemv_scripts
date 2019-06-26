@@ -14,9 +14,20 @@ module uvm_top_example;
 
   // Events
   initial
-  begin
-    // use UVM Run Test factory base to run custom test
-    run_test("test_name");
-  end
+    begin
+      // Clock Generator
+      dut_if_name.clock = 0;
+      forever #10 dut_if_name.clock =~ dut_if_name.clock;
+    end
+  
+  initial
+    begin
+      // Calling UVM Config Database
+      uvm_config_db #(virtual dut_if)::set(...);
+      // Declaring $finish
+      uvm_top.finish_on_completion = 1;
+      // use UVM Run Test factory base to run custom test
+      run_test("test_name");
+    end
   
  endmodule
