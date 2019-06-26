@@ -11,9 +11,38 @@ package uvm_package_example;
         endfunction
      endclass: env_name
      
-     // Declaring Test Driver
+     // Declaring Virtual Interface Driver
+     class driver_name extends uvm_driver;
+        // Using component utilis macro to define virtual interface
+        `uvm_component_utilis(driver_name)
+        // Instantiating virtual interface
+        virtual dut_if_name dut_vi_name;
+        
+        function new(string name, uvm_component parent);
+           super.new(name, parent);         // // Calling factory base
+        endfunction
+        
+        // Declaring Phase, build type
+        function void build_phase(uvm_phase phase_name);
+            if ( ! uvm_config_db #(virtual dut_if_name)::get(this, "", "dut_if_name", dut_vi_name));
+            `uvm_error("", "uvm_config_db::get failed")
+        endfunction
+        
+        // Declaring Phase, Run type
+        task run_phase(uvm_phase phase_name);
+            forever
+                begin
+                    @(posedge dut_vi_name.clock or negedge dut_vi_name.reset);
+                    dut_vi_name.portA <= $urandom;
+                    dut_vi_name.portB <= $urandom;
+                end
+         endtask
+     
+     endclass:driver_name
+     
+     // Declaring Test Stimulus
      class test_name extends uvm_test;
-        // Uising component utilis macro to define environment
+        // Using component utilis macro to define environment
         `uvm_component_utils(test_name)
         // Instantiating environment as this_env
         env_name this_env;
@@ -30,8 +59,8 @@ package uvm_package_example;
         // Declaring Phase, type run
         task run_phase(uvm_phase phase_name);
             phase.raise_objection(this);
-            #10;
-            `uvm_info("", "Hello World", UVM_MEDIUM)
+            #80;
+            `uvm_info("", "Info Message", UVM_MEDIUM)
             phase.drop_objection(this);
         endtask
      
