@@ -30,7 +30,7 @@ class reference extends uvm_component;
     tx = output_tx::type_id::create("tx");
     tx.portA = t.portA;
     tx.portB = t.portB;
-    case (t.portA % n)
+    case (t.portA % (n+1))
       0: analysis_port_0.write(tx);
       //.........
       n: analysis_port_n.write(tx);
