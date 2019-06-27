@@ -4,15 +4,115 @@ package uvm_package_example;
     // Declare classes here
     // Declaring Environment
     class env_name extends uvm_env;
-        // Uising component utilis macro to define environment
+        // Instantiating Sequencer as seqr
+        sequence_name seqr;
+        
+        // Instantiating Dirver as driv
+        driver_name driv;
+        
+        // Using component utilis macro to define environment
         `uvm_component_utils(env_name)
         function new(string name, uvm_component parent);
             super.new(name,parent);         // Calling factory base
         endfunction
+        
+        // Declaring component build
+        function void build_phase(uvm_phase phase);
+            seqr = sequence_name::type_id::create("seqr", this);
+            driv = driver_name::type_id::create("driv", this);
+        endfunction
+        
+        // Declaring port-export TLM connections
+        function void connect_phase(uvm_phase phase);
+            driv.seq_item_port.connect( seqr.seq_item_export );
+        endfunction
+        
      endclass: env_name
      
+     // Declaring Transaction
+     class tx_name extends uvm_sequence_item;
+        // Using object utilis macro to define transaction
+        `uvm_object_utilis(tx_name)
+        // randomizing ports
+        rand int portA;
+        rand int portB;
+        
+        // Adding constraints for transaction stimulus
+        constraint c_portA { portA >= 0; portA < 256 };
+        constraint c_portB { portB >= 0; portB < 256 };
+        
+        // Transaction constructor factory base
+        function new (string name = "");
+            super.new(name);
+        endfunction
+        
+        // Getting Transaction return value in string format
+        function string convert2string;
+            return $sformatf("portA=%d, portB=%d", portA, portB);
+        endfunction
+        
+        // Copy Transaction into a different object
+        function void do_copy(uvm_object rhs);
+            tx_name tx;     // copying tx_name as tx
+            $cast(tx, rhs);
+            portA = tx.portA;
+            portB = tx.portB;
+        endfunction
+        
+        // declaring transaction compare policy
+        function bit do_compare(uvm_object rhs, uvm_compare comparer);
+            tx_name tx;     // copying tx_name as tx
+            bit status = 1;
+            $cast(tx, rhs);
+            status &= (portA == tx.portA);
+            status &= (portB == tx.portB);
+            return status;
+         endfunction
+         
+     //endclass: tx_name
+     
+     // Declaring Sequencer and parameterizing it to transaction
+     // Using simple vanilla sequencer available through uvm
+     typedef uvm_sequencer #(tx_name) sequencer_name;
+     
+     // Declaring Sequence
+     class sequence_name extends uvm_sequence #(tx_name);
+        // Using object utilis macro to define sequencer
+        `uvm_object_utilis(sequencer_name)
+        
+        // Sequencer constructor factory base
+        function new (string name = "");
+            super.new(name);
+        endfunction
+        
+        // Writing sequence body to declare its behavior
+        task body;
+            // raise objection boiler plate
+            if (starting_phase != null)
+                starting_phase.raise_objection(this);
+            
+            //body behavior
+            repeat(8)
+            begin
+                // generating request to process transaction
+                req = tx_name::type_id::create("req");
+                start_item(req);    // start request
+                
+                if( !req.randomize() )
+                    `uvm_error("", "Randomize Failed");
+                
+                finish_item(req);   // finish request
+            end
+                
+            // drop objection boiler plate
+            if (starting_phase != null)
+                starting_phase.drop_objection(this);
+        endtask
+        
+     endclass: sequence_name
+     
      // Declaring Virtual Interface Driver
-     class driver_name extends uvm_driver;
+     class driver_name extends uvm_driver #(tx_name);
         // Using component utilis macro to define virtual interface
         `uvm_component_utilis(driver_name)
         // Instantiating virtual interface
@@ -23,18 +123,25 @@ package uvm_package_example;
         endfunction
         
         // Declaring Phase, build type
-        function void build_phase(uvm_phase phase_name);
+        function void build_phase(uvm_phase phase);
             if ( ! uvm_config_db #(virtual dut_if_name)::get(this, "", "dut_if_name", dut_vi_name));
             `uvm_error("", "uvm_config_db::get failed")
         endfunction
         
         // Declaring Phase, Run type
-        task run_phase(uvm_phase phase_name);
+        task run_phase(uvm_phase phase);
             forever
                 begin
+                    // Calling next transaction from sequencer
+                    seq_item_port.get_next_item(req);
+                    
+                    // processing the transaction
                     @(posedge dut_vi_name.clock or negedge dut_vi_name.reset);
-                    dut_vi_name.portA <= $urandom;
-                    dut_vi_name.portB <= $urandom;
+                    dut_vi_name.portA <= req.portA;
+                    dut_vi_name.portB <= req.portB;
+                    
+                    // send finish flag to sequencer after processing transaction
+                    seq_item_port.item_done();
                 end
          endtask
      
@@ -52,16 +159,22 @@ package uvm_package_example;
         endfunction
     
         // Declaring phase, type build
-        function void build_phase(uvm_phase phase_name);
+        function void build_phase(uvm_phase phase);
             this_env = this_env::type_id::create("this_env", this);
         endfunction
     
         // Declaring Phase, type run
-        task run_phase(uvm_phase phase_name);
-            phase.raise_objection(this);
-            #80;
-            `uvm_info("", "Info Message", UVM_MEDIUM)
-            phase.drop_objection(this);
+        task run_phase(uvm_phase phase);
+            // instantiating sequencer
+            sequence_name seq;
+            seq = sequence_name::type_id::create("seq");
+            
+            if( !seq.randomize() )
+                uvm_error("", "Randomize Failed")
+                
+            seq.starting_phase = phase;
+            
+            seq.start( this_env.seqr );
         endtask
      
      endclass: test_name
